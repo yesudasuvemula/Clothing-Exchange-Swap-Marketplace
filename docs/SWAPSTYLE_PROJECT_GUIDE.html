@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SwapStyle | Project & Build Guide</title>
+  <style>
+    @page { size: Letter; margin: 0.72in 0.78in; }
+    :root { color-scheme: light; }
+    body {
+      font-family: "Aptos", "Segoe UI", Arial, sans-serif;
+      color: #17212b;
+      font-size: 10.5pt;
+      line-height: 1.48;
+      max-width: 8.5in;
+      margin: 0 auto;
+    }
+    h1, h2, h3 { color: #103b32; line-height: 1.2; }
+    h1 { font-size: 30pt; margin: 0 0 8pt; }
+    h2 { font-size: 18pt; margin: 25pt 0 8pt; border-bottom: 1.5pt solid #10b981; padding-bottom: 5pt; }
+    h3 { font-size: 12.5pt; margin: 15pt 0 5pt; }
+    p { margin: 5pt 0 9pt; }
+    ul, ol { margin: 4pt 0 10pt 20pt; padding-left: 12pt; }
+    li { margin: 2pt 0; }
+    a { color: #087f5b; }
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 9pt;
+      background: #edf5f2;
+      padding: 1pt 3pt;
+    }
+    pre {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 8.5pt;
+      line-height: 1.38;
+      background: #f1f5f4;
+      border-left: 3pt solid #10b981;
+      padding: 10pt 12pt;
+      white-space: pre-wrap;
+    }
+    table { border-collapse: collapse; width: 100%; margin: 8pt 0 14pt; font-size: 9.5pt; }
+    th { background: #103b32; color: white; text-align: left; }
+    th, td { border: 1px solid #cad7d2; padding: 6pt 7pt; vertical-align: top; }
+    tr:nth-child(even) td { background: #f5f8f7; }
+    .cover { padding: 55pt 0 30pt; border-bottom: 4pt solid #10b981; }
+    .eyebrow { color: #087f5b; text-transform: uppercase; letter-spacing: 2pt; font-weight: bold; font-size: 9pt; }
+    .subtitle { color: #52616b; font-size: 15pt; max-width: 540pt; }
+    .meta { color: #65737d; font-size: 9pt; margin-top: 24pt; }
+    .callout { background: #edf7f3; border-left: 3pt solid #10b981; padding: 9pt 12pt; margin: 10pt 0 13pt; }
+    .warning { background: #fff7e6; border-left: 3pt solid #e6a700; padding: 9pt 12pt; margin: 10pt 0 13pt; }
+    .small { color: #52616b; font-size: 9pt; }
+    .toc li { margin: 4pt 0; }
+    .page-break { page-break-before: always; }
+    @media print { body { max-width: none; } a { color: #087f5b; text-decoration: none; } }
+  </style>
+</head>
+<body>
+  <header class="cover">
+    <div class="eyebrow">Project documentation · Build and developer guide</div>
+    <h1>SwapStyle</h1>
+    <p class="subtitle">A practical guide to the Clothing Exchange &amp; Swap Marketplace: what it does, how the code is organized, how to run it, and how its demo data and swap workflow fit together.</p>
+    <p class="meta">Prepared from the current source code · 14 November 2026</p>
+  </header>
+
+  <h2>At a glance</h2>
+  <p>SwapStyle is a browser-based clothing barter marketplace prototype. A visitor can browse sample garments, inspect details, estimate barter values, create a swap request, negotiate in a chat-style screen, and review activity on a dashboard. A profile switcher makes it possible to try the experience as different seeded demo accounts.</p>
+  <div class="callout"><strong>Important scope:</strong> The current app is a frontend demo. Its sample users, listings, swaps, and messages are stored in the browser's <code>localStorage</code>. There is no API server, shared database, live geolocation service, or production login system in this project.</div>
+
+  <h2>Contents</h2>
+  <ol class="toc">
+    <li>Features and user journey</li>
+    <li>Technology and project structure</li>
+    <li>Install, run, check, and build</li>
+    <li>How state and data persistence work</li>
+    <li>Barter value calculation</li>
+    <li>Where to make common changes</li>
+    <li>Testing and troubleshooting</li>
+    <li>Current limitations and next steps</li>
+  </ol>
+
+  <h2>1. Features and user journey</h2>
+  <table>
+    <thead><tr><th>Screen / area</th><th>What a demo user can do</th><th>Main source</th></tr></thead>
+    <tbody>
+      <tr><td>Explore Wardrobes</td><td>Search sample listings; filter by category, brand, condition, and optional distance; sort by estimated value or distance; open item details or propose a swap.</td><td><code>src/pages/ListingsPage.jsx</code></td></tr>
+      <tr><td>Garment detail</td><td>Review a selected item's description, images, specifications, owner, and swap action.</td><td><code>src/pages/ItemDetailPage.jsx</code></td></tr>
+      <tr><td>Value Calculator</td><td>Compare two item estimates and see a simple fair-trade indicator.</td><td><code>src/pages/CalculatorPage.jsx</code></td></tr>
+      <tr><td>Negotiation &amp; Chat</td><td>View requests involving the selected profile, send messages, accept or reject a proposal, and mark an accepted trade completed.</td><td><code>src/pages/ChatNegotiationPage.jsx</code></td></tr>
+      <tr><td>My Dashboard</td><td>Review the selected user's wardrobe, swap activity, and sample profile metrics.</td><td><code>src/pages/UserDashboardPage.jsx</code></td></tr>
+      <tr><td>Admin Panel</td><td>View demo listing and swap metrics and moderate listings in the local demo state.</td><td><code>src/pages/AdminPanelPage.jsx</code></td></tr>
+      <tr><td>Listing and proposal dialogs</td><td>Add a sample garment or create a swap proposal using an item already in the demo data.</td><td><code>src/components/UploadItemModal.jsx</code>; <code>src/components/SwapRequestModal.jsx</code></td></tr>
+    </tbody>
+  </table>
+  <p>A typical demo flow is: choose a profile in the top-right switcher → browse an available garment → open its details → start a swap proposal → switch to the other demo profile → respond in Negotiation &amp; Chat → complete the swap → check the dashboard or admin metrics.</p>
+  <p>The switcher changes the active demo identity; it is not an authentication or authorization mechanism. The admin screen is likewise part of the client-side prototype.</p>
+
+  <h2>2. Technology and project structure</h2>
+  <ul>
+    <li><strong>React 19</strong> builds the interface as reusable components.</li>
+    <li><strong>Vite 8</strong> serves the app during development and creates the production bundle.</li>
+    <li><strong>React Context</strong> shares the current user, items, swaps, messages, and marketplace actions between screens.</li>
+    <li><strong>Browser localStorage</strong> persists demo state between reloads on the same browser and origin.</li>
+    <li><strong>lucide-react</strong> provides icons; <strong>canvas-confetti</strong> adds a completion effect.</li>
+    <li><strong>Oxlint</strong> runs the project's lint command.</li>
+  </ul>
+  <table>
+    <thead><tr><th>Path</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>index.html</code></td><td>HTML page and React mount element.</td></tr>
+      <tr><td><code>src/main.jsx</code></td><td>Creates the React root, loads global CSS, and wraps the app in an error boundary.</td></tr>
+      <tr><td><code>src/App.jsx</code></td><td>Sets up the marketplace provider, navigation between screens, and modal visibility.</td></tr>
+      <tr><td><code>src/context/MarketplaceContext.jsx</code></td><td>Owns shared demo state, localStorage hydration/persistence, valuation, and marketplace actions.</td></tr>
+      <tr><td><code>src/context/useMarketplace.js</code></td><td>Convenient hook for reading the marketplace context.</td></tr>
+      <tr><td><code>src/mockData.js</code></td><td>Seed accounts, garments, swap requests, messages, category/brand data, and valuation constants.</td></tr>
+      <tr><td><code>src/pages/</code></td><td>Top-level screen components.</td></tr>
+      <tr><td><code>src/components/</code></td><td>Shared navigation and dialog components.</td></tr>
+      <tr><td><code>src/index.css</code>, <code>src/App.css</code></td><td>Global design tokens, layout, and application styles.</td></tr>
+      <tr><td><code>docs/</code></td><td>This guide and its exported Word/PDF copies.</td></tr>
+      <tr><td><code>dist/</code></td><td>Generated production output after running the build command; do not edit by hand.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>3. Install, run, check, and build</h2>
+  <h3>Prerequisites</h3>
+  <ul>
+    <li>Node.js <code>^20.19.0</code> or <code>&gt;=22.12.0</code> (the Vite toolchain's supported range in the lockfile).</li>
+    <li>npm, installed with Node.js.</li>
+    <li>A modern browser. Some demo garment/profile images are remote URLs and require an internet connection to load.</li>
+  </ul>
+  <h3>On Windows PowerShell</h3>
+  <p>Open PowerShell in the project folder (the folder containing <code>package.json</code>) and run:</p>
+  <pre>npm install
+npm run dev</pre>
+  <p>Open the local URL Vite prints in the terminal, usually <code>http://localhost:5173</code>. Keep the terminal open while using the development server. Vite's hot module replacement reloads changes as files are saved.</p>
+  <h3>Project commands</h3>
+  <table>
+    <thead><tr><th>Command</th><th>Purpose</th><th>Expected result</th></tr></thead>
+    <tbody>
+      <tr><td><code>npm run dev</code></td><td>Run the development server.</td><td>Local URL and hot reload.</td></tr>
+      <tr><td><code>npm run lint</code></td><td>Run Oxlint.</td><td>Reports lint diagnostics and exits with a status code.</td></tr>
+      <tr><td><code>npm run build</code></td><td>Build the production app.</td><td>Generated files under <code>dist/</code>.</td></tr>
+      <tr><td><code>npm run preview</code></td><td>Serve the existing production build locally.</td><td>Local preview URL; run <code>npm run build</code> first.</td></tr>
+    </tbody>
+  </table>
+  <p>For a quick project check, run <code>npm run lint</code> and <code>npm run build</code>. This project does not define a dedicated automated test script in <code>package.json</code>.</p>
+
+  <h2>4. How state and persistence work</h2>
+  <p><code>MarketplaceProvider</code> initializes state from localStorage where possible and otherwise uses seed data from <code>mockData.js</code>. React effects write the latest values back to the browser. The current storage keys are:</p>
+  <table>
+    <thead><tr><th>Key</th><th>Stored data</th></tr></thead>
+    <tbody>
+      <tr><td><code>swapstyle_current_user</code></td><td>The selected demo profile.</td></tr>
+      <tr><td><code>swapstyle_users</code></td><td>Seeded and additional demo users.</td></tr>
+      <tr><td><code>swapstyle_items</code></td><td>Seeded and newly listed garments.</td></tr>
+      <tr><td><code>swapstyle_swaps</code></td><td>Seeded and newly created swap requests and statuses.</td></tr>
+      <tr><td><code>swapstyle_messages</code></td><td>Seeded and sent chat messages.</td></tr>
+    </tbody>
+  </table>
+  <p>On startup, seeded account information is refreshed from <code>INITIAL_USERS</code> while preserving additional stored accounts and the previously selected account ID. Saved listing and swap avatars are resolved against the refreshed users so an edited demo profile image appears in related UI.</p>
+  <div class="warning"><strong>Reset behavior:</strong> “Reset Demo Simulation” resets marketplace demo state and currently calls <code>localStorage.clear()</code>. This clears all localStorage entries for the current site origin, not only the SwapStyle keys. Use it only when you want a clean local demo.</div>
+  <p>Because localStorage belongs to a particular browser and origin, data is not synchronized to another device, browser profile, or person. Clearing site data or using the reset button removes the locally saved changes.</p>
+
+  <h2>5. Barter value calculation</h2>
+  <p>The valuation function is <code>calculateSwapValue</code> in <code>src/context/MarketplaceContext.jsx</code>. It uses the category base values, brand tiers, and condition multipliers exported from <code>src/mockData.js</code>. The values are estimates in Indian rupees (₹), not market quotes.</p>
+  <h3>Without a retail price</h3>
+  <pre>base estimate = category base value × brand multiplier × condition multiplier</pre>
+  <h3>When an original retail price is provided</h3>
+  <pre>retail estimate = original retail price × 0.42 × condition multiplier
+combined estimate = 0.40 × base estimate + 0.60 × retail estimate</pre>
+  <p>The result is rounded to a whole rupee and has a minimum of ₹500. Unknown categories, brands, or conditions use the function's fallback values.</p>
+  <table>
+    <thead><tr><th>Brand group</th><th>Multiplier</th><th>Examples in the seed configuration</th></tr></thead>
+    <tbody>
+      <tr><td>Luxury</td><td>1.60</td><td>Reformation, Sézane, Acne Studios, Ganni</td></tr>
+      <tr><td>Heritage</td><td>1.30</td><td>Patagonia, Carhartt, Dr. Martens, Levi's</td></tr>
+      <tr><td>Premium minimal</td><td>1.15</td><td>COS, Everlane, Arket, Massimo Dutti, Fabindia</td></tr>
+      <tr><td>High street</td><td>0.90</td><td>Zara, H&amp;M, Mango, Uniqlo, Vintage / Unbranded</td></tr>
+      <tr><td>Unmatched brand</td><td>1.00</td><td>Default for brands not in a configured tier</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <thead><tr><th>Condition</th><th>Multiplier</th></tr></thead>
+    <tbody>
+      <tr><td>Brand New</td><td>1.25</td></tr>
+      <tr><td>Like New</td><td>1.05</td></tr>
+      <tr><td>Good</td><td>0.85</td></tr>
+      <tr><td>Fair</td><td>0.60</td></tr>
+    </tbody>
+  </table>
+  <p>The calculator shows a fair-trade indicator when the value difference is at most ₹800 <em>or</em> the smaller estimate is at least 75% of the larger one. This is a demo rule; it does not guarantee that two people consider a swap fair.</p>
+
+  <h2>6. Where to make common changes</h2>
+  <table>
+    <thead><tr><th>Change you want</th><th>Start here</th><th>Also check</th></tr></thead>
+    <tbody>
+      <tr><td>Edit demo profile name, city, bio, or avatar</td><td><code>INITIAL_USERS</code> in <code>src/mockData.js</code></td><td>Listing and swap seed snapshots in the same file; profile UI in <code>Navbar.jsx</code> and <code>UserDashboardPage.jsx</code>.</td></tr>
+      <tr><td>Add or edit a demo garment</td><td><code>INITIAL_ITEMS</code> in <code>src/mockData.js</code></td><td>Keep item IDs, owner IDs, values, images, and status consistent.</td></tr>
+      <tr><td>Change categories, brands, or conditions</td><td>Constants near the bottom of <code>src/mockData.js</code></td><td>Uploader and calculator selectors use these constants.</td></tr>
+      <tr><td>Change estimated values</td><td><code>calculateSwapValue</code> in <code>MarketplaceContext.jsx</code></td><td>Category base values, brand tiers, and condition multipliers in <code>mockData.js</code>; calculator fairness threshold in <code>CalculatorPage.jsx</code>.</td></tr>
+      <tr><td>Change navigation or screen composition</td><td><code>src/App.jsx</code> and <code>src/components/Navbar.jsx</code></td><td>Each page component under <code>src/pages/</code>.</td></tr>
+      <tr><td>Change colors, typography, or layout</td><td><code>src/index.css</code> and <code>src/App.css</code></td><td>Some components also use inline styles.</td></tr>
+      <tr><td>Change stored data rules</td><td><code>src/context/MarketplaceContext.jsx</code></td><td>Review old localStorage data and seed compatibility after schema changes.</td></tr>
+    </tbody>
+  </table>
+  <p>After editing seed values, reload the app. If a browser already has saved items, swaps, or messages, those user-generated records remain local. Use the app's reset action to return the demo to seed data if that is intended.</p>
+
+  <h2>7. Testing and troubleshooting</h2>
+  <table>
+    <thead><tr><th>Symptom</th><th>What to try</th></tr></thead>
+    <tbody>
+      <tr><td>Updated sample profile details are not visible</td><td>Reload the page and check the matching profile ID. The app refreshes seeded user fields on startup; user-generated local data is otherwise persisted.</td></tr>
+      <tr><td>A profile or garment picture is blank</td><td>Check the image URL by opening it directly and confirm the browser has internet access. Remote image hosts can return errors or block hotlinking.</td></tr>
+      <tr><td>App shows an older state</td><td>Check the selected demo account and the current site's saved data. Reset the demo only if you intend to discard local changes.</td></tr>
+      <tr><td>Port 5173 is already in use</td><td>Stop the other Vite process or run <code>npm run dev -- --port 5174</code>, then open the URL Vite prints.</td></tr>
+      <tr><td>Dependency or Node compatibility error</td><td>Use a supported Node version, then run <code>npm install</code> in the project root.</td></tr>
+      <tr><td>Production build fails</td><td>Read the first build error in the terminal, fix the referenced source issue, then rerun <code>npm run build</code>.</td></tr>
+    </tbody>
+  </table>
+  <p>Recommended validation after a code change: run <code>npm run lint</code>, run <code>npm run build</code>, and manually exercise the screen or workflow that changed in the browser.</p>
+
+  <h2>8. Current limitations and sensible next steps</h2>
+  <ul>
+    <li><strong>No backend:</strong> records only exist in one browser's localStorage. For shared accounts and listings, add an API and persistent database.</li>
+    <li><strong>No real authentication:</strong> the profile switcher is a demo convenience, not secure identity or authorization. Add server-verified authentication and role checks before exposing admin actions.</li>
+    <li><strong>No real-time transport:</strong> chat messages are local state; multiple users do not receive live updates.</li>
+    <li><strong>Mock proximity:</strong> listing distance and city are sample fields. The app does not request device location or calculate routes.</li>
+    <li><strong>Demo metrics:</strong> environmental impact and listing data are illustrative UI figures, not verified impact accounting.</li>
+    <li><strong>External images:</strong> profile and garment image availability depends on third-party hosts.</li>
+    <li><strong>No automated test command:</strong> add focused tests as business rules and persistent data flows become more important.</li>
+  </ul>
+  <p>For a production-ready version, build and test in small stages: define backend data models and APIs; implement authentication and authorization; migrate listings, users, swaps, and messages to the server; validate uploads and user input; add automated tests; then add operational logging, privacy controls, and deployment configuration.</p>
+
+  <hr>
+  <p class="small"><strong>Documentation note:</strong> This guide reflects the source code and package scripts present when it was prepared. If application behavior changes, update this guide and regenerate the DOCX/PDF copies.</p>
+</body>
+</html>
